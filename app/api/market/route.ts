@@ -59,4 +59,30 @@ async function getRealTimeMarketData() {
       hyundai_change: chg(metas[6]),
       hsteel_price: fmt(metas[7]),
       hsteel_change: chg(metas[7]),
-      kia_price: fmt(meta
+      kia_price: fmt(metas[8]),
+      kia_change: chg(metas[8]),
+    }
+  } catch (e) {
+    console.error('시장 데이터 에러:', e)
+    return null
+  }
+}
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const dateParam = searchParams.get('date')
+  const dateStr = dateParam ?? format(toZonedTime(new Date(), 'Asia/Seoul'), 'yyyy-MM-dd')
+
+  const [lessonRes, briefRes, marketData] = await Promise.all([
+    supabase.from('daily_lessons').select('*').eq('date', dateStr).single(),
+    supabase.from('market_briefs').select('*').eq('date', dateStr).single(),
+    getRealTimeMarketData(),
+  ])
+
+  return NextResponse.json({
+    lesson: lessonRes.data ?? null,
+    brief: briefRes.data ?? null,
+    date: dateStr,
+    realtime: marketData,
+  })
+}
