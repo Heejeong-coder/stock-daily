@@ -135,7 +135,7 @@ JSON만 출력, 코드블록 없이
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-5',
-    max_tokens: 1000,
+    max_tokens: 4000,
     messages: [{ role: 'user', content: prompt }]
   })
 
