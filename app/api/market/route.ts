@@ -6,38 +6,25 @@ import { toZonedTime } from 'date-fns-tz'
 async function getRealTimeMarketData() {
   try {
     const symbols = [
-      '%5EKS11',   // 코스피
-      '%5EIXIC',   // 나스닥
-      'KRW%3DX',   // 원달러
-      '005930.KS', // 삼성전자
-      '005935.KS', // 삼성전자우
-      '000660.KS', // SK하이닉스
-      '005380.KS', // 현대차
-      '004020.KS', // 현대제철
-      '000270.KS', // 기아
+      '%5EKS11', '%5EIXIC', 'KRW%3DX',
+      '005930.KS', '005935.KS', '000660.KS',
+      '005380.KS', '004020.KS', '000270.KS',
     ]
-
-    const results = await Promise.allSettled(
-      symbols.map(s =>
-        fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${s}?interval=1d&range=1d`, {
-          headers: { 'User-Agent': 'Mozilla/5.0' },
-          next: { revalidate: 30 }
-        }).then(r => r.json())
-      )
+    const fetches = symbols.map(s =>
+      fetch(`https://query2.finance.yahoo.com/v8/finance/chart/${s}?interval=1d&range=1d`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      }).then(r => r.json()).catch(() => null)
     )
+    const results = await Promise.all(fetches)
 
-    const getMeta = (i: number) => {
-      const r = results[i]
-      if (r.status !== 'fulfilled') return null
-      return r.value?.chart?.result?.[0]?.meta ?? null
-    }
+    const getMeta = (i: number) => results[i]?.chart?.result?.[0]?.meta ?? null
 
-    const price = (m: any): string => {
+    const fmt = (m: any): string => {
       if (!m?.regularMarketPrice) return '-'
       return m.regularMarketPrice.toLocaleString('ko-KR')
     }
 
-    const change = (m: any): string => {
+    const chg = (m: any): string => {
       if (!m) return '-'
       const prev = m.chartPreviousClose ?? m.previousClose
       const curr = m.regularMarketPrice
@@ -48,23 +35,23 @@ async function getRealTimeMarketData() {
     const metas = symbols.map((_, i) => getMeta(i))
 
     return {
-      kospi_price: price(metas[0]),
-      kospi_change: change(metas[0]),
-      nasdaq_price: price(metas[1]),
-      nasdaq_change: change(metas[1]),
+      kospi_price: fmt(metas[0]),
+      kospi_change: chg(metas[0]),
+      nasdaq_price: fmt(metas[1]),
+      nasdaq_change: chg(metas[1]),
       usdkrw: metas[2]?.regularMarketPrice?.toFixed(0) ?? '-',
-      samsung_price: price(metas[3]),
-      samsung_change: change(metas[3]),
-      samsung_p_price: price(metas[4]),
-      samsung_p_change: change(metas[4]),
-      hynix_price: price(metas[5]),
-      hynix_change: change(metas[5]),
-      hyundai_price: price(metas[6]),
-      hyundai_change: change(metas[6]),
-      hsteel_price: price(metas[7]),
-      hsteel_change: change(metas[7]),
-      kia_price: price(metas[8]),
-      kia_change: change(metas[8]),
+      samsung_price: fmt(metas[3]),
+      samsung_change: chg(metas[3]),
+      samsung_p_price: fmt(metas[4]),
+      samsung_p_change: chg(metas[4]),
+      hynix_price: fmt(metas[5]),
+      hynix_change: chg(metas[5]),
+      hyundai_price: fmt(metas[6]),
+      hyundai_change: chg(metas[6]),
+      hsteel_price: fmt(metas[7]),
+      hsteel_change: chg(metas[7]),
+      kia_price: fmt(metas[8]),
+      kia_change: chg(metas[8]),
     }
   } catch (e) {
     console.error('시장 데이터 에러:', e)
