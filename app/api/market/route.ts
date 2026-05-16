@@ -5,30 +5,53 @@ import { toZonedTime } from 'date-fns-tz'
 
 async function getRealTimeMarketData() {
   try {
-    const yf = (await import('yahoo-finance2')).default
-    const symbols = ['^KS11', 'KRW=X', '005930.KS', '000660.KS', '000270.KS']
-    const results = await Promise.allSettled(symbols.map(s => yf.quote(s)))
+    const [kospiRes, exchangeRes, samsungRes, hynixRes, kiaRes] = await Promise.allSettled([
+      fetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EKS11?interval=1d&range=1d', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+      fetch('https://query1.finance.yahoo.com/v8/finance/chart/KRW%3DX?interval=1d&range=1d', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+      fetch('https://query1.finance.yahoo.com/v8/finance/chart/005930.KS?interval=1d&range=1d', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+      fetch('https://query1.finance.yahoo.com/v8/finance/chart/000660.KS?interval=1d&range=1d', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+      fetch('https://query1.finance.yahoo.com/v8/finance/chart/000270.KS?interval=1d&range=1d', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+    ])
 
-    const v = (i: number, key: string): string => {
-      const r = results[i]
-      if (r.status !== 'fulfilled') return '-'
-      const val = (r.value as any)[key]
-      return val != null ? String(val) : '-'
+    const getData = async (res: PromiseSettledResult<Response>) => {
+      if (res.status !== 'fulfilled') return null
+      try {
+        const json = await res.value.json()
+        const meta = json?.chart?.result?.[0]?.meta
+        return meta ?? null
+      } catch { return null }
+    }
+
+    const [kospi, exchange, samsung, hynix, kia] = await Promise.all([
+      getData(kospiRes),
+      getData(exchangeRes),
+      getData(samsungRes),
+      getData(hynixRes),
+      getData(kiaRes),
+    ])
+
+    const price = (m: any) => m?.regularMarketPrice?.toLocaleString() ?? '-'
+    const change = (m: any) => {
+      if (!m) return '-'
+      const prev = m.chartPreviousClose ?? m.previousClose
+      const curr = m.regularMarketPrice
+      if (!prev || !curr) return '-'
+      return ((curr - prev) / prev * 100).toFixed(2)
     }
 
     return {
-      kospi_price: v(0, 'regularMarketPrice'),
-      kospi_change: v(0, 'regularMarketChangePercent'),
-      usdkrw: v(1, 'regularMarketPrice'),
-      samsung_price: v(2, 'regularMarketPrice'),
-      samsung_change: v(2, 'regularMarketChangePercent'),
-      hynix_price: v(3, 'regularMarketPrice'),
-      hynix_change: v(3, 'regularMarketChangePercent'),
-      kia_price: v(4, 'regularMarketPrice'),
-      kia_change: v(4, 'regularMarketChangePercent'),
+      kospi_price: price(kospi),
+      kospi_change: change(kospi),
+      usdkrw: exchange?.regularMarketPrice?.toFixed(0) ?? '-',
+      samsung_price: price(samsung),
+      samsung_change: change(samsung),
+      hynix_price: price(hynix),
+      hynix_change: change(hynix),
+      kia_price: price(kia),
+      kia_change: change(kia),
     }
   } catch (e) {
-    console.error('Yahoo Finance 에러:', e)
+    console.error('시장 데이터 에러:', e)
     return null
   }
 }
