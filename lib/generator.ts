@@ -20,50 +20,18 @@ const CURRICULUM = [
   { topic: '수급 매일 루틴', category: '실전' },
 ]
 
-function getField(text: string, key: string): string {
+const getField = (text: string, key: string): string => {
   const match = text.match(new RegExp(`${key}:\\s*(.+)`))
   return match ? match[1].trim() : ''
-}
-
-// 실시간 시장 데이터 가져오기
-async function fetchMarketData(dateStr: string): Promise<string> {
-  const dateLabel = format(new Date(dateStr), 'M월 d일', { locale: ko })
-  
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-5',
-    max_tokens: 1000,
-    tools: [{ type: 'web_search_20250305' as any, name: 'web_search' }],
-    messages: [{
-      role: 'user',
-      content: `${dateLabel} 기준 한국 주식시장 현황을 검색해서 아래 형식으로 알려주세요:
-코스피지수, 원달러환율, 신용융자잔고, 외국인수급, 주요이슈
-한 문단으로 요약해주세요.`
-    }]
-  })
-
-  const textContent = response.content.find((c: any) => c.type === 'text')
-  return textContent ? (textContent as any).text : '시장 데이터 없음'
 }
 
 export async function generateDailyContent(dayNumber: number, dateStr: string) {
   const curriculum = CURRICULUM[(dayNumber - 1) % CURRICULUM.length]
   const dateLabel = format(new Date(dateStr), 'M월 d일 (EEE)', { locale: ko })
 
-  // 실시간 시장 데이터 가져오기
-  let marketData = ''
-  try {
-    marketData = await fetchMarketData(dateStr)
-  } catch {
-    marketData = '시장 데이터 조회 실패'
-  }
-
   const prompt = `한국 주식시장 전문가로서 오늘(${dateLabel}) 주식 기초 레슨을 만들어주세요.
 주제: "${curriculum.topic}" (${curriculum.category}) Day ${dayNumber}일차
-
-오늘의 실시간 시장 현황:
-${marketData}
-
-위 시장 데이터를 레슨에 반드시 반영하세요.
+2026년 5월 현재 시장: 코스피 7,493, 환율 1,494원, 신용융자 35조, 삼성전자 파업 이슈, MSCI 편입 기대
 
 아래 필드를 채워주세요:
 TITLE: (20자 이내 제목)
@@ -85,14 +53,7 @@ CHECK1: (체크항목1)
 CHECK2: (체크항목2)
 CHECK3: (체크항목3)
 KEYPOINT: (핵심 한줄)
-CONTEXT: (오늘 실시간 시장 데이터 기반 연결 2문장)
-QUIZ_Q: (퀴즈 질문)
-QUIZ_A: (보기A)
-QUIZ_B: (보기B)
-QUIZ_C: (보기C)
-QUIZ_D: (보기D)
-QUIZ_ANSWER: (0~3 숫자)
-QUIZ_EXPLAIN: (해설 1문장)`
+CONTEXT: (오늘 시장 데이터 기반 연결 2문장)`
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-5',
@@ -120,43 +81,35 @@ QUIZ_EXPLAIN: (해설 1문장)`
     },
     key_point: getField(text, 'KEYPOINT'),
     market_context: getField(text, 'CONTEXT'),
-    quiz: {
-      question: getField(text, 'QUIZ_Q'),
-      options: [getField(text, 'QUIZ_A'), getField(text, 'QUIZ_B'), getField(text, 'QUIZ_C'), getField(text, 'QUIZ_D')],
-      answer: parseInt(getField(text, 'QUIZ_ANSWER')) || 0,
-      explanation: getField(text, 'QUIZ_EXPLAIN'),
-    }
+    quiz: { question: '', options: [], answer: 0, explanation: '' }
   }
 }
 
 export async function generateMarketBrief(dateStr: string) {
   const dateLabel = format(new Date(dateStr), 'M월 d일 (EEE)', { locale: ko })
 
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-5',
-    max_tokens: 4000,
-    tools: [{ type: 'web_search_20250305' as any, name: 'web_search' }],
-    messages: [{
-      role: 'user',
-      content: `${dateLabel} 한국 주식시장 현황을 검색해서 브리핑을 작성하세요.
-코스피 지수, 환율, 신용융자잔고, 외국인 수급, 주요 이슈를 검색 후 아래 형식으로 작성:
+  const prompt = `한국 주식시장 애널리스트로서 ${dateLabel} 시장 브리핑을 작성하세요.
+현재 시장 데이터: 코스피 7,493, 환율 1,494원, 신용융자 35조, 외국인 6.3조 순매도(5/15)
 
 KOSPI_COMMENT: (코스피 한줄평, 실제 수치 포함)
 INDICATOR_예탁금: (실제 수준)
-INDICATOR_신용잔고: (실제 수준)
-INDICATOR_환율: (실제 환율)
+INDICATOR_신용잔고: (35조원, 역대 최고)
+INDICATOR_환율: (1,494원)
 INDICATOR_외국인: (수급 방향)
 FOREIGN_NET: (외국인 수급 요약)
 RISK_LEVEL: (1~5 숫자)
 WATCH1: (이번주 주목 이벤트1)
 WATCH2: (이번주 주목 이벤트2)
 WATCH3: (이번주 주목 이벤트3)
-AI_COMMENT: (오늘 시장 코멘트 3문장, 실제 수치 기반)`
-    }]
+AI_COMMENT: (오늘 시장 코멘트 3문장)`
+
+  const response = await client.messages.create({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 4000,
+    messages: [{ role: 'user', content: prompt }]
   })
 
-  const textContent = response.content.find((c: any) => c.type === 'text')
-  const text = textContent ? (textContent as any).text : ''
+  const text = response.content[0].type === 'text' ? response.content[0].text : ''
 
   return {
     kospi_comment: getField(text, 'KOSPI_COMMENT'),
