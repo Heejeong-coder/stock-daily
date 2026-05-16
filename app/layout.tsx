@@ -1,28 +1,28 @@
 import type { Metadata } from 'next'
-import { Noto_Serif_KR, JetBrains_Mono } from 'next/font/google'
+import { Inter, Space_Grotesk } from 'next/font/google'
 import './globals.css'
 
-const notoSerif = Noto_Serif_KR({
+const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '600', '700'],
-  variable: '--font-noto-serif',
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-inter',
 })
 
-const jetbrains = JetBrains_Mono({
+const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
-  weight: ['400', '600'],
-  variable: '--font-jetbrains',
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-space',
 })
 
 export const metadata: Metadata = {
-  title: '주식 기초 — 매일 한 레슨',
-  description: '매일 아침 6시, 전문가급 주식 지식이 업데이트됩니다',
+  title: "Heejeong's Market — Daily Intelligence",
+  description: '매일 아침, 시장을 읽는 눈',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
-      <body className={`${notoSerif.variable} ${jetbrains.variable}`}>
+      <body className={`${inter.variable} ${spaceGrotesk.variable}`}>
         {children}
       </body>
     </html>

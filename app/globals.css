@@ -3,16 +3,18 @@
 @tailwind utilities;
 
 :root {
-  --font-noto-serif: 'Noto Serif KR', serif;
-  --font-jetbrains: 'JetBrains Mono', monospace;
+  --font-inter: 'Inter', sans-serif;
+  --font-space: 'Space Grotesk', sans-serif;
+  --font-jetbrains: 'Space Grotesk', monospace;
+  --font-noto-serif: 'Inter', sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: #0a0a0f;
+  background: #09090e;
   color: #e8e4dc;
-  font-family: var(--font-noto-serif);
+  font-family: var(--font-inter);
   min-height: 100vh;
 }
 
@@ -20,9 +22,9 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image:
-    repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(200,169,110,0.025) 60px, rgba(200,169,110,0.025) 61px),
-    repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(200,169,110,0.025) 60px, rgba(200,169,110,0.025) 61px);
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(200,169,110,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(78,205,196,0.04) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -33,9 +35,8 @@ body::before {
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.animate-fade-up { animation: fadeUp 0.5s ease both; }
-.animate-pulse-dot { animation: pulse 2s infinite; }
+.animate-fade-up { animation: fadeUp 0.4s ease both; }
