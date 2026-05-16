@@ -7,19 +7,31 @@ async function getRealTimeMarketData() {
   try {
     const yahooFinance = (await import('yahoo-finance2')).default
     const symbols = ['^KS11', 'KRW=X', '005930.KS', '000660.KS', '000270.KS']
-    const results = await Promise.all(
-      symbols.map(s => yahooFinance.quote(s).catch(() => null))
+    const results = await Promise.allSettled(
+      symbols.map(s => yahooFinance.quote(s))
     )
+
+    function getPrice(i: number): number | null {
+      const r = results[i]
+      if (r.status === 'fulfilled') return (r.value as any).regularMarketPrice ?? null
+      return null
+    }
+    function getChange(i: number): number | null {
+      const r = results[i]
+      if (r.status === 'fulfilled') return (r.value as any).regularMarketChangePercent ?? null
+      return null
+    }
+
     return {
-      kospi_price: results[0]?.regularMarketPrice?.toLocaleString() ?? '-',
-      kospi_change: results[0]?.regularMarketChangePercent?.toFixed(2) ?? '-',
-      usdkrw: results[1]?.regularMarketPrice?.toFixed(0) ?? '-',
-      samsung_price: results[2]?.regularMarketPrice?.toLocaleString() ?? '-',
-      samsung_change: results[2]?.regularMarketChangePercent?.toFixed(2) ?? '-',
-      hynix_price: results[3]?.regularMarketPrice?.toLocaleString() ?? '-',
-      hynix_change: results[3]?.regularMarketChangePercent?.toFixed(2) ?? '-',
-      kia_price: results[4]?.regularMarketPrice?.toLocaleString() ?? '-',
-      kia_change: results[4]?.regularMarketChangePercent?.toFixed(2) ?? '-',
+      kospi_price: getPrice(0)?.toLocaleString() ?? '-',
+      kospi_change: getChange(0)?.toFixed(2) ?? '-',
+      usdkrw: getPrice(1)?.toFixed(0) ?? '-',
+      samsung_price: getPrice(2)?.toLocaleString() ?? '-',
+      samsung_change: getChange(2)?.toFixed(2) ?? '-',
+      hynix_price: getPrice(3)?.toLocaleString() ?? '-',
+      hynix_change: getChange(3)?.toFixed(2) ?? '-',
+      kia_price: getPrice(4)?.toLocaleString() ?? '-',
+      kia_change: getChange(4)?.toFixed(2) ?? '-',
     }
   } catch (e) {
     console.error('Yahoo Finance 에러:', e)
