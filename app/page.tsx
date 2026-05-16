@@ -31,7 +31,6 @@ interface Lesson {
   }
   key_point: string
   market_context: string
-  quiz: { question: string; options: string[]; answer: number; explanation: string }
 }
 
 interface Brief {
@@ -61,15 +60,12 @@ export default function Home() {
   const [brief, setBrief] = useState<Brief | null>(null)
   const [realtime, setRealtime] = useState<Realtime | null>(null)
   const [loading, setLoading] = useState(true)
-  const [quizAnswer, setQuizAnswer] = useState<number | null>(null)
-  const [showExplanation, setShowExplanation] = useState(false)
   const [pastLessons, setPastLessons] = useState<Lesson[]>([])
   const [activeTab, setActiveTab] = useState<'lesson' | 'brief' | 'archive'>('lesson')
 
   useEffect(() => {
     fetchToday()
     fetchPastLessons()
-    // 실시간 주가 30초마다 갱신
     const interval = setInterval(fetchToday, 30000)
     return () => clearInterval(interval)
   }, [])
@@ -107,7 +103,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 실시간 주가 티커 */}
+      {/* 실시간 주가 */}
       {realtime && (
         <div style={{ background: '#111118', border: '1px solid #2a2a3a', borderRadius: 12, padding: '16px 20px', marginBottom: 24 }}>
           <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#888899', letterSpacing: 2, marginBottom: 12 }}>▶ 실시간 시장 (30초 갱신)</div>
@@ -219,40 +215,11 @@ export default function Home() {
                 <div style={{ background: '#111118', border: '1px solid #2a2a3a', borderRadius: 12, padding: '20px 24px', marginBottom: 20 }}>
                   <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#888899', letterSpacing: 2, marginBottom: 14 }}>매일 확인 체크리스트</div>
                   {lesson.content.daily_checklist.map((item, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 10, padding: '8px 0', borderBottom: i < lesson.content.daily_checklist.length-1 ? '1px solid #1a1a24':'none', fontSize: 13, color: '#888899' }}>
+                    <div key={i} style={{ display: 'flex', gap: 10, padding: '8px 0', borderBottom: i<lesson.content.daily_checklist.length-1?'1px solid #1a1a24':'none', fontSize: 13, color: '#888899' }}>
                       <span style={{ color: catColor, fontFamily: 'var(--font-jetbrains)' }}>{String(i+1).padStart(2,'0')}</span>
                       {item}
                     </div>
                   ))}
-                </div>
-              )}
-
-              {lesson.quiz && (
-                <div style={{ background: '#111118', border: '1px solid #2a2a3a', borderRadius: 12, padding: 24, marginBottom: 20 }}>
-                  <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#888899', letterSpacing: 2, marginBottom: 14 }}>오늘의 퀴즈</div>
-                  <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 16, lineHeight: 1.5 }}>{lesson.quiz.question}</p>
-                  <div style={{ display: 'grid', gap: 8 }}>
-                    {lesson.quiz.options.map((opt, i) => {
-                      const isSelected = quizAnswer === i
-                      const isCorrect = i === lesson.quiz.answer
-                      const showResult = quizAnswer !== null
-                      let bg = '#1a1a24', border = '#2a2a3a', color = '#888899'
-                      if (showResult && isCorrect) { bg='rgba(93,187,122,0.1)'; border='#5dbb7a'; color='#5dbb7a' }
-                      else if (showResult && isSelected && !isCorrect) { bg='rgba(224,92,92,0.1)'; border='#e05c5c'; color='#e05c5c' }
-                      else if (isSelected) { bg='rgba(200,169,110,0.1)'; border='#c8a96e'; color='#c8a96e' }
-                      return (
-                        <button key={i} onClick={() => { if(quizAnswer===null){setQuizAnswer(i);setShowExplanation(true)} }}
-                          style={{ padding:'12px 16px', background:bg, border:`1px solid ${border}`, borderRadius:8, color, textAlign:'left', cursor:quizAnswer===null?'pointer':'default', fontSize:13, lineHeight:1.5, fontFamily:'var(--font-noto-serif)' }}>
-                          <span style={{ fontFamily:'var(--font-jetbrains)', marginRight:8 }}>{['A','B','C','D'][i]}.</span>{opt}
-                        </button>
-                      )
-                    })}
-                  </div>
-                  {showExplanation && (
-                    <div style={{ marginTop:16, padding:'14px 16px', background:'rgba(93,187,122,0.08)', border:'1px solid rgba(93,187,122,0.3)', borderRadius:8, fontSize:13, color:'#5dbb7a', lineHeight:1.7 }}>
-                      <strong>해설:</strong> {lesson.quiz.explanation}
-                    </div>
-                  )}
                 </div>
               )}
             </div>
@@ -318,10 +285,10 @@ export default function Home() {
           {pastLessons.length === 0 ? (
             <div style={{ textAlign:'center', padding:'60px 0', color:'#888899', fontSize:14 }}>아직 아카이브가 없습니다</div>
           ) : (
-            pastLessons.map((l,i) => {
+            pastLessons.map((l) => {
               const cc = CATEGORY_COLORS[l.category] ?? '#c8a96e'
               return (
-                <div key={l.id} style={{ background:'#111118', border:'1px solid #2a2a3a', borderRadius:10, padding:'16px 20px', marginBottom:10, display:'flex', gap:14 }} className="animate-fade-up">
+                <div key={l.id} style={{ background:'#111118', border:'1px solid #2a2a3a', borderRadius:10, padding:'16px 20px', marginBottom:10, display:'flex', gap:14 }}>
                   <div style={{ fontFamily:'var(--font-jetbrains)', fontSize:11, color:cc, background:`${cc}22`, border:`1px solid ${cc}44`, borderRadius:4, padding:'3px 8px', whiteSpace:'nowrap', marginTop:2 }}>Day {l.day_number}</div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:11, color:'#888899', fontFamily:'var(--font-jetbrains)', marginBottom:4 }}>{l.date} · {l.topic}</div>
@@ -336,8 +303,8 @@ export default function Home() {
       )}
 
       <div style={{ textAlign:'center', marginTop:48, paddingTop:32, borderTop:'1px solid #2a2a3a', color:'#888899', fontSize:12, lineHeight:1.8 }}>
-        <p>본 자료는 투자 교육 목적으로 제공되며 투자 권유가 아닙니다.</p>
-        <p>모든 투자 판단과 그에 따른 결과는 투자자 본인에게 있습니다.</p>
+        <p>본 자료는 희정이의 투자 교육 목적으로 제공되며 투자 권유가 아닙니다.</p>
+        <p>모든 투자 판단과 그에 따른 결과는 희정이 본인에게 있습니다.</p>
       </div>
 
     </div>
